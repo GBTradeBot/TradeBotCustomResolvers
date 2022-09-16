@@ -15,7 +15,5 @@ export async function sendToRabbit(toSend: any) {
 
   const ch2 = await conn.createChannel();
 
-  setInterval(() => {
-    ch2.sendToQueue(queue, Buffer.from(toSend));
-  }, 1000);
+  ch2.sendToQueue(queue, Buffer.from(toSend));
 }
