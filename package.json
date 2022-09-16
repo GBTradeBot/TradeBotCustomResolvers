@@ -14,7 +14,8 @@
   "dependencies": {
     "amqplib": "^0.10.3",
     "apollo-server": "^3.10.2",
-    "dotenv": "^16.0.2"
+    "dotenv": "^16.0.2",
+    "rimraf": "^3.0.2"
   },
   "devDependencies": {
     "@types/amqplib": "^0.8.2"
