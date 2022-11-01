@@ -3,6 +3,7 @@ import { sendToRabbit } from './services/MessagingService';
 
 const typeDefs = gql`
   input RabbitPayload {
+    id: String!
     email: String!
     type: String!
   }
