@@ -1,5 +1,5 @@
 import { ApolloServer, gql } from 'apollo-server';
-import { sendToRabbit } from './services/MessagingService';
+import { sendToManagerHttp, sendToRabbit } from './services/MessagingService';
 
 const typeDefs = gql`
   input RabbitPayload {
@@ -10,6 +10,7 @@ const typeDefs = gql`
 
   type Mutation {
     sendCommand(payload: RabbitPayload!): String!
+    sendCommandHttp(payload: RabbitPayload!): String!
   }
 
   type Query {
@@ -22,6 +23,16 @@ const resolvers = {
     sendCommand: async (parent: any, args: any, context: any, info: any) => {
       console.log(args.payload);
       const response = await sendToRabbit(JSON.stringify(args.payload));
+      return 'success';
+    },
+    sendCommandHttp: async (
+      parent: any,
+      args: any,
+      context: any,
+      info: any
+    ) => {
+      console.log(args.payload);
+      const response = await sendToManagerHttp();
       return 'success';
     },
   },
