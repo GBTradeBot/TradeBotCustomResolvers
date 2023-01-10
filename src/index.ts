@@ -31,8 +31,7 @@ const resolvers = {
       context: any,
       info: any
     ) => {
-      console.log(args.payload);
-      const response = await sendToManagerHttp();
+      const response = await sendToManagerHttp(JSON.stringify(args.payload));
       return 'success';
     },
   },

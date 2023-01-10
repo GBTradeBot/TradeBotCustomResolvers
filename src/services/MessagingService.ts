@@ -19,21 +19,20 @@ export async function sendToRabbit(toSend: any) {
   ch2.sendToQueue(queue, Buffer.from(toSend));
 }
 
-export async function sendToManagerHttp() {
+export async function sendToManagerHttp(toSend: any) {
   const response = await axios.post(
-    'http://amqp.console-bot.com:15672/api/exchanges/Trading/http.scheduler-tasks/publish',
+    process.env.RABBIT_HTTP_URL!,
     {
       properties: {},
       routing_key: '',
-      payload: 'test2',
+      payload: toSend,
       payload_encoding: 'string',
     },
     {
       auth: {
-        username: 'TradeBot',
-        password: `62fj45l65'b26456`,
+        username: process.env.RABBIT_LOGIN!,
+        password: process.env.RABBIT_PASS!,
       },
     }
   );
-  console.log(response);
 }
