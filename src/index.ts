@@ -6,6 +6,7 @@ const typeDefs = gql`
     id: Int!
     email: String!
     type: String!
+    rabbitUrl: String!
   }
 
   type Mutation {
@@ -31,7 +32,15 @@ const resolvers = {
       context: any,
       info: any
     ) => {
-      const response = await sendToManagerHttp(JSON.stringify(args.payload));
+      const newToSend = {
+        id: args.payload.id,
+        email: args.payload.email,
+        type: args.payload.type,
+      };
+      const response = await sendToManagerHttp(
+        args.payload.rabbitUrl,
+        JSON.stringify(newToSend)
+      );
       return 'success';
     },
   },
