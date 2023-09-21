@@ -1,5 +1,5 @@
 import { ApolloServer, gql } from 'apollo-server';
-import { sendToManagerHttp, sendToRabbit } from './services/MessagingService';
+import { sendSolveSbcHttp, sendToManagerHttp, sendToRabbit } from './services/MessagingService';
 
 const typeDefs = gql`
   input RabbitPayload {
@@ -9,9 +9,14 @@ const typeDefs = gql`
     rabbitUrl: String!
   }
 
+  input SBCPayload {
+    account_ids: [Int]!
+  }
+
   type Mutation {
     sendCommand(payload: RabbitPayload!): String!
     sendCommandHttp(payload: RabbitPayload!): String!
+    solveSbcHttp(payload: SBCPayload): String!
   }
 
   type Query {
@@ -43,6 +48,21 @@ const resolvers = {
       );
       return 'success';
     },
+    solveSbcHttp: async (
+      parent: any,
+      args: any,
+      context: any,
+      info: any
+    ) => {
+      const newToSend = {
+        accounts: args.payload.account_ids,
+        challengeName: 'Marquee Matchups',
+      };
+      const response = await sendSolveSbcHttp(
+        JSON.stringify(newToSend)
+      );
+      return 'success';
+    },
   },
   Query: {
     Orders: (parent: any, args: any, context: any, info: any) => {
@@ -56,7 +76,7 @@ async function run() {
 
   const server = new ApolloServer({ typeDefs, resolvers });
 
-  server.listen(3000).then(({ url }) => {
+  server.listen(4000).then(({ url }) => {
     console.log(`🚀  Server ready at ${url}`);
   });
 }
