@@ -1,5 +1,9 @@
 import { ApolloServer, gql } from 'apollo-server';
-import { sendSolveSbcHttp, sendToManagerHttp, sendToRabbit } from './services/MessagingService';
+import {
+  sendSolveSbcHttp,
+  sendToManagerHttp,
+  sendToRabbit,
+} from './services/MessagingService';
 
 const typeDefs = gql`
   input RabbitPayload {
@@ -11,6 +15,7 @@ const typeDefs = gql`
 
   input SBCPayload {
     account_ids: [Int]!
+    to_solve: String!
   }
 
   type Mutation {
@@ -48,19 +53,12 @@ const resolvers = {
       );
       return 'success';
     },
-    solveSbcHttp: async (
-      parent: any,
-      args: any,
-      context: any,
-      info: any
-    ) => {
+    solveSbcHttp: async (parent: any, args: any, context: any, info: any) => {
       const newToSend = {
         accounts: args.payload.account_ids,
-        challengeName: 'Marquee Matchups',
+        challengeName: args.payload.to_solve,
       };
-      const response = await sendSolveSbcHttp(
-        JSON.stringify(newToSend)
-      );
+      const response = await sendSolveSbcHttp(JSON.stringify(newToSend));
       return 'success';
     },
   },

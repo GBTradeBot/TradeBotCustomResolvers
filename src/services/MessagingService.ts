@@ -40,9 +40,8 @@ export async function sendToManagerHttp(rabbitUrl: string, toSend: any) {
 }
 
 export async function sendSolveSbcHttp(toSend: any) {
-  // console.log(rabbitUrl);
-  // console.log(toSend);
-  const response = await axios.post(process.env.SBC_RABBIT_HTTP_URL!,
+  const response = await axios.post(
+    process.env.SBC_RABBIT_HTTP_URL!,
     {
       properties: {},
       routing_key: '',
