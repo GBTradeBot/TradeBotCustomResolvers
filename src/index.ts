@@ -4,7 +4,7 @@ import {
   sendToManagerHttp,
   sendToRabbit,
 } from './services/MessagingService';
-import { groupBy } from './utils/utils';
+import { groupBy, sleep } from './utils/utils';
 import AccToStart from './interfaces/AccToStart';
 
 const typeDefs = gql`
@@ -77,7 +77,9 @@ const resolvers = {
       try {
         const accs: AccToStart[] = args.payload.accounts;
         const accsByServer = groupBy(accs, 'server_id');
-        console.log(accsByServer);
+        for (const [serverId, accs] of accsByServer.entries()) {
+          startAccs(accs, args.payload.rabbitUrl);
+        }
         return 'success';
       } catch (err: any) {
         console.log('error while starting accs:' + err);
@@ -99,6 +101,21 @@ const resolvers = {
     },
   },
 };
+
+async function startAccs(accs: AccToStart[], rabbitUrl: string) {
+  const timeToWaitOnServer = 6000;
+  for (const acc of accs) {
+    await sendToManagerHttp(
+      rabbitUrl,
+      JSON.stringify({
+        id: acc.id,
+        email: acc.email,
+        type: 'START',
+      })
+    );
+    await sleep(timeToWaitOnServer);
+  }
+}
 
 async function run() {
   // await messagingService.start();

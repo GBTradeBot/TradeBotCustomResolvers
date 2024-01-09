@@ -14,3 +14,6 @@ export function groupBy<T>(objects: T[], param: keyof T) {
 
   return groups;
 }
+
+export const sleep = async (delayInMs: number) =>
+  new Promise((r) => setTimeout(r, delayInMs));
