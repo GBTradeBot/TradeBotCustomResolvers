@@ -4,11 +4,25 @@ import {
   sendToManagerHttp,
   sendToRabbit,
 } from './services/MessagingService';
+import { groupBy } from './utils/utils';
+import AccToStart from './interfaces/AccToStart';
 
 const typeDefs = gql`
   input RabbitPayload {
     id: Int!
     email: String!
+    type: String!
+    rabbitUrl: String!
+  }
+
+  input AccountPayload {
+    id: Int!
+    email: String!
+    server_id: Int!
+  }
+
+  input RabbitPayloadByServers {
+    accounts: [AccountPayload]
     type: String!
     rabbitUrl: String!
   }
@@ -22,6 +36,7 @@ const typeDefs = gql`
     sendCommand(payload: RabbitPayload!): String!
     sendCommandHttp(payload: RabbitPayload!): String!
     solveSbcHttp(payload: SBCPayload): String!
+    sendStartByServers(payload: RabbitPayloadByServers): String!
   }
 
   type Query {
@@ -52,6 +67,22 @@ const resolvers = {
         JSON.stringify(newToSend)
       );
       return 'success';
+    },
+    sendStartByServers: async (
+      parent: any,
+      args: any,
+      context: any,
+      info: any
+    ) => {
+      try {
+        const accs: AccToStart[] = args.payload.accounts;
+        const accsByServer = groupBy(accs, 'server_id');
+        console.log(accsByServer);
+        return 'success';
+      } catch (err: any) {
+        console.log('error while starting accs:' + err);
+        return 'error';
+      }
     },
     solveSbcHttp: async (parent: any, args: any, context: any, info: any) => {
       const newToSend = {
