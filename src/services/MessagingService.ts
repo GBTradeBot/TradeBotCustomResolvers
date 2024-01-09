@@ -56,3 +56,22 @@ export async function sendSolveSbcHttp(toSend: any) {
     }
   );
 }
+
+export async function sendChangeConfig(toSend: any) {
+  console.log(toSend);
+  // const response = await axios.post(
+  //   process.env.FLOW_RABBIT_HTTP_URL!,
+  //   {
+  //     properties: {},
+  //     routing_key: '',
+  //     payload: toSend,
+  //     payload_encoding: 'string',
+  //   },
+  //   {
+  //     auth: {
+  //       username: process.env.RABBIT_LOGIN!,
+  //       password: process.env.RABBIT_PASS!,
+  //     },
+  //   }
+  // );
+}

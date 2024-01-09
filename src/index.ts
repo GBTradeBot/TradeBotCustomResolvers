@@ -1,5 +1,6 @@
 import { ApolloServer, gql } from 'apollo-server';
 import {
+  sendChangeConfig,
   sendSolveSbcHttp,
   sendToManagerHttp,
   sendToRabbit,
@@ -32,11 +33,21 @@ const typeDefs = gql`
     to_solve: String!
   }
 
+  input Config {
+    max_time_to_try_sbc: Int
+  }
+
+  input ChangeConfigPayload {
+    account_ids: [Int]!
+    config: Config
+  }
+
   type Mutation {
     sendCommand(payload: RabbitPayload!): String!
     sendCommandHttp(payload: RabbitPayload!): String!
     solveSbcHttp(payload: SBCPayload): String!
     sendStartByServers(payload: RabbitPayloadByServers): String!
+    changeConfig(payload: ChangeConfigPayload): String!
   }
 
   type Query {
@@ -92,6 +103,22 @@ const resolvers = {
         challengeName: args.payload.to_solve,
       };
       const response = await sendSolveSbcHttp(JSON.stringify(newToSend));
+      return 'success';
+    },
+    changeConfig: async (parent: any, args: any, context: any, info: any) => {
+      for(const account_id of args.payload.account_ids) {
+        const newToSend = {
+          type: 'WORKER_PERSONAL_COMMAND',
+          sender: 'admin-page',
+          data: {
+            accountId: account_id,
+            new_config: args.payload.config,
+            type: 'CHANGE_CONFIG'
+          }
+        };
+        const response = await sendChangeConfig(JSON.stringify(newToSend));
+      }
+      
       return 'success';
     },
   },
