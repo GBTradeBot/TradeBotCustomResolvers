@@ -5,7 +5,7 @@ import {
   sendToManagerHttp,
   sendToRabbit,
 } from './services/MessagingService';
-import { groupBy, sleep } from './utils/utils';
+import { configToMs, groupBy, sleep } from './utils/utils';
 import AccToStart from './interfaces/AccToStart';
 
 const typeDefs = gql`
@@ -34,7 +34,9 @@ const typeDefs = gql`
   }
 
   input Config {
-    max_time_to_try_sbc: Int
+    maxTimeToTrySbc: Int
+    sbcDuration: Int
+    shouldTrySbc: Boolean
   }
 
   input ChangeConfigPayload {
@@ -106,19 +108,19 @@ const resolvers = {
       return 'success';
     },
     changeConfig: async (parent: any, args: any, context: any, info: any) => {
-      for(const account_id of args.payload.account_ids) {
+      for (const account_id of args.payload.account_ids) {
         const newToSend = {
           type: 'WORKER_PERSONAL_COMMAND',
           sender: 'admin-page',
           data: {
             accountId: account_id,
-            new_config: args.payload.config,
-            type: 'CHANGE_CONFIG'
-          }
+            newConfig: configToMs(args.payload.config),
+            type: 'CHANGE_CONFIG',
+          },
         };
         const response = await sendChangeConfig(JSON.stringify(newToSend));
       }
-      
+
       return 'success';
     },
   },
