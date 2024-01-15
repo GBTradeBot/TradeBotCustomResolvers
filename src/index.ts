@@ -7,6 +7,7 @@ import {
 } from './services/MessagingService';
 import { configToMs, groupBy, sleep } from './utils/utils';
 import AccToStart from './interfaces/AccToStart';
+import { duration } from 'moment';
 
 const typeDefs = gql`
   input RabbitPayload {
@@ -25,6 +26,7 @@ const typeDefs = gql`
   input RabbitPayloadByServers {
     accounts: [AccountPayload]
     type: String!
+    secondsBetween: Int!
     rabbitUrl: String!
   }
 
@@ -91,7 +93,7 @@ const resolvers = {
         const accs: AccToStart[] = args.payload.accounts;
         const accsByServer = groupBy(accs, 'server_id');
         for (const [serverId, accs] of accsByServer.entries()) {
-          startAccs(accs, args.payload.rabbitUrl);
+          startAccs(accs, args.payload.rabbitUrl, args.payload.secondsBetween);
         }
         return 'success';
       } catch (err: any) {
@@ -131,8 +133,8 @@ const resolvers = {
   },
 };
 
-async function startAccs(accs: AccToStart[], rabbitUrl: string) {
-  const timeToWaitOnServer = 6000;
+async function startAccs(accs: AccToStart[], rabbitUrl: string, secondBetween: number) {
+  const timeToWaitOnServer = duration(secondBetween, 'seconds').asMilliseconds();
   for (const acc of accs) {
     await sendToManagerHttp(
       rabbitUrl,
