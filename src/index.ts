@@ -134,8 +134,10 @@ const resolvers = {
 };
 
 async function startAccs(accs: AccToStart[], rabbitUrl: string, secondBetween: number) {
+  const maxAccsToStart = 120;
   const timeToWaitOnServer = duration(secondBetween, 'seconds').asMilliseconds();
-  for (const acc of accs) {
+  const accsWithCeiling = accs.slice(0, maxAccsToStart)
+  for (const acc of accsWithCeiling) {
     await sendToManagerHttp(
       rabbitUrl,
       JSON.stringify({
