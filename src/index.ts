@@ -27,6 +27,7 @@ const typeDefs = gql`
     accounts: [AccountPayload]
     type: String!
     secondsBetween: Int!
+    maxAccsToStart: Int!
     rabbitUrl: String!
   }
 
@@ -93,7 +94,7 @@ const resolvers = {
         const accs: AccToStart[] = args.payload.accounts;
         const accsByServer = groupBy(accs, 'server_id');
         for (const [serverId, accs] of accsByServer.entries()) {
-          startAccs(accs, args.payload.rabbitUrl, args.payload.secondsBetween);
+          startAccs(accs, args.payload.rabbitUrl, args.payload.secondsBetween, args.payload.maxAccsToStart);
         }
         return 'success';
       } catch (err: any) {
@@ -133,8 +134,7 @@ const resolvers = {
   },
 };
 
-async function startAccs(accs: AccToStart[], rabbitUrl: string, secondBetween: number) {
-  const maxAccsToStart = 130;
+async function startAccs(accs: AccToStart[], rabbitUrl: string, secondBetween: number, maxAccsToStart: number) {
   const timeToWaitOnServer = duration(secondBetween, 'seconds').asMilliseconds();
   const accsWithCeiling = accs.slice(0, maxAccsToStart)
   for (const acc of accsWithCeiling) {
