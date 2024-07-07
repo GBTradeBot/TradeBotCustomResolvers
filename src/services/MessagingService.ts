@@ -19,7 +19,7 @@ export async function sendToRabbit(toSend: any) {
   ch2.sendToQueue(queue, Buffer.from(toSend));
 }
 
-export async function sendToManagerHttp(rabbitUrl: string, toSend: any) {
+export async function sendToManagerHttp(rabbitUrl: string, toSend: string) {
   // console.log(rabbitUrl);
   // console.log(toSend);
   const response = await axios.post(

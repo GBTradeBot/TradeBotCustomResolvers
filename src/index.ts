@@ -8,6 +8,8 @@ import {
 import { configToMs, groupBy, sleep } from './utils/utils';
 import AccToStart from './interfaces/AccToStart';
 import { duration } from 'moment';
+import DB, { Account } from './services/DB';
+import { createClient as createTradeClient } from './../generated/trade';
 
 const typeDefs = gql`
   input RabbitPayload {
@@ -20,7 +22,7 @@ const typeDefs = gql`
   input AccountPayload {
     id: Int!
     email: String!
-    server_id: Int!
+    service_name: String!
   }
 
   input RabbitPayloadByServers {
@@ -91,11 +93,18 @@ const resolvers = {
       info: any
     ) => {
       try {
+        const maxAccsByService = 93;
         const accs: AccToStart[] = args.payload.accounts;
-        const accsByServer = groupBy(accs, 'server_id');
-        for (const [serverId, accs] of accsByServer.entries()) {
-          startAccs(accs, args.payload.rabbitUrl, args.payload.secondsBetween, args.payload.maxAccsToStart);
-        }
+        const freeSpaceByService = await getFreeSpaceByService(maxAccsByService);
+        const accountsGroupedForStart = selectSubsetsByFreeSpace(accs, freeSpaceByService);
+
+        await startAccsByService(
+          args.payload.rabbitUrl,
+          accountsGroupedForStart,
+          maxAccsByService,
+          Math.min(...Array.from(freeSpaceByService).map((v) => v[1])),
+        );
+
         return 'success';
       } catch (err: any) {
         console.log('error while starting accs:' + err);
@@ -150,6 +159,112 @@ async function startAccs(accs: AccToStart[], rabbitUrl: string, secondBetween: n
   }
 }
 
+async function getFreeSpaceByService(maxFreeSpacePerService: number): Promise<Map<string, number>> {
+  const db: DB = new DB(
+    createTradeClient({
+      url: process.env.TRADE_ENDPOINT,
+      headers: {
+        'x-hasura-admin-secret': process.env.TRADE_HASURA_ADMIN_SECRET!,
+      },
+    }),
+  );
+  const allLaunchedAccounts = (await db.getAllActiveAccounts()).map((acc) => ({
+    id: acc.id,
+    serviceName: acc.scheduler_account_info?.service_name ?? null,
+  }));
+  
+  const accsByService = groupBy(allLaunchedAccounts, 'serviceName');
+
+  const resultMap = new Map<string, number>();
+  for (const [serviceName, accounts] of accsByService.entries()) {
+    if (serviceName === null) {
+      continue;
+    }
+
+    resultMap.set(serviceName, Math.max(maxFreeSpacePerService - accounts.length, 0));
+  }
+
+  return resultMap;
+}
+
+function selectSubsetsByFreeSpace<T extends { id: number, service_name: string }>(
+  sortedAccounts: T[],
+  freeSpaceByService: Map<string, number>,
+): T[][] {
+  const accountsByService = groupBy(sortedAccounts, 'service_name') as Map<string, T[]>;
+  let maxFreeSpace = 0;
+
+  for (const [serviceName, serviceAccounts] of accountsByService) {
+    const serviceFreeSpace = freeSpaceByService.get(serviceName) || 0;
+
+    if (serviceFreeSpace > maxFreeSpace) {
+      maxFreeSpace = serviceFreeSpace;
+    }
+
+    accountsByService.set(serviceName, serviceAccounts.slice(0, serviceFreeSpace));
+  }
+
+  const resultArray: T[][] = [];
+
+  for (let i = 0; i < maxFreeSpace; i += 1) {
+    const subArray: T[] = [];
+
+    accountsByService.forEach((allServiceAccounts) => {
+      if (allServiceAccounts[i]) {
+        subArray.push(allServiceAccounts[i]);
+      }
+    });
+
+    resultArray.push(subArray);
+  }
+
+  return resultArray; 
+}
+
+async function startAccsByService(
+  rabbitUrl: string,
+  accountsGroups: Account[][],
+  maxFreeSpace: number,
+  currentFreeSpace: number
+) {
+  for (let i = 0; i < accountsGroups.length; i++) {
+    const accountsGroup = accountsGroups[i];
+
+    const secondsBetween = getSecondsBetweenStart(
+      maxFreeSpace, 
+      Math.max(currentFreeSpace - i, 1)
+    );
+    
+    for (const account of accountsGroup) {
+      const accountId = account.id!;
+      const accountEmail = account.email!;
+
+      const command = {
+        id: accountId,
+        email: accountEmail,
+        type: 'START',
+      }
+
+      // console.log(command);
+  
+      await sendToManagerHttp(
+        rabbitUrl,
+        JSON.stringify(command)
+      );
+    }
+
+    await sleep(duration(secondsBetween, 'seconds').asMilliseconds());
+  }
+}
+
+function getSecondsBetweenStart(maxFreeSpace: number, freeSpace: number): number {
+  const minSeconds = 10;
+  const maxSeconds = 20;
+
+  const freeSpacePercents = freeSpace / maxFreeSpace;
+  return minSeconds + Math.round((1 - freeSpacePercents) * (maxSeconds - minSeconds));
+}
+
 async function run() {
   // await messagingService.start();
 
@@ -161,3 +276,4 @@ async function run() {
 }
 
 run();
+

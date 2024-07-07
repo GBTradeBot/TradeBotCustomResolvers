@@ -7,11 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:clear": "rimraf dist",
     "build": "npm run build:clear && tsc -p .",
-    "start": "node dist/index.js"
+    "start": "node dist/src/index.js",
+    "generate-graphql-interfaces": "ts-node src/utils/generate"
   },
   "author": "Vanya",
   "license": "ISC",
   "dependencies": {
+    "@genql/cli": "6.2.1",
     "amqplib": "^0.10.3",
     "apollo-server": "^3.10.2",
     "axios": "^1.2.2",
