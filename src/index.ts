@@ -168,7 +168,10 @@ async function getFreeSpaceByService(maxFreeSpacePerService: number): Promise<Ma
       },
     }),
   );
-  const allLaunchedAccounts = (await db.getAllActiveAccounts()).map((acc) => ({
+  await sleep(1000);
+
+  const allActiveAccounts = await db.getAllActiveAccounts();
+  const allLaunchedAccounts = allActiveAccounts.map((acc) => ({
     id: acc.id,
     serviceName: acc.scheduler_account_info?.service_name ?? null,
   }));
