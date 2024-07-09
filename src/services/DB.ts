@@ -48,7 +48,7 @@ export default class DB {
 
       return response.accounts;
     } catch (error) {
-      console.log('DB ERROR: getAccounts error', error);
+      console.log('DB ERROR: getAllActiveAccounts error', error);
       return [];
     }
   }
