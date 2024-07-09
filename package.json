@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:clear": "rimraf dist",
-    "build": "npm run build:clear && tsc -p .",
+    "build": "npm run build:clear && npm run generate-graphql-interfaces && tsc -p .",
     "start": "node dist/src/index.js",
     "generate-graphql-interfaces": "ts-node src/utils/generate"
   },
