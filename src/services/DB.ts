@@ -52,4 +52,19 @@ export default class DB {
       return [];
     }
   }
+
+  async getWorkerServices() {
+    try {
+      const result = await this.graphqlTradeClient.query({
+        worker_services: {
+          service_name: true,
+        }
+      });
+
+      return result.worker_services;
+    } catch (err) {
+      console.error('ERROR getWorkerServices:', err);
+      return [];
+    }
+  }
 }

@@ -57,6 +57,26 @@ export async function sendSolveSbcHttp(toSend: any) {
   );
 }
 
+export async function serviceHasConsumer(serviceName: string) {
+  try {
+    const response = await axios.get(
+      `${process.env.RABBIT_HTTP_URL_BASE!}/api/queues/Trading/${serviceName}`,
+      {
+        auth: {
+          username: process.env.RABBIT_LOGIN!,
+          password: process.env.RABBIT_PASS!,
+        },
+      }
+    );
+
+    const queue = response.data;
+    return queue && queue.consumers && queue.consumers > 0;
+  } catch (error) {
+    console.log('Error serviceHasConsumer: ' + error);
+    return false;
+  }
+}
+
 export async function sendChangeConfig(toSend: any) {
   console.log(toSend);
   const response = await axios.post(

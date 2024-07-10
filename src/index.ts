@@ -4,6 +4,7 @@ import {
   sendSolveSbcHttp,
   sendToManagerHttp,
   sendToRabbit,
+  serviceHasConsumer,
 } from './services/MessagingService';
 import { configToMs, groupBy, sleep } from './utils/utils';
 import AccToStart from './interfaces/AccToStart';
@@ -93,10 +94,13 @@ const resolvers = {
       info: any
     ) => {
       try {
+        console.log('start accs by service');
         const maxAccsByService = 93;
         const accs: AccToStart[] = args.payload.accounts;
         const freeSpaceByService = await getFreeSpaceByService(maxAccsByService);
         const accountsGroupedForStart = selectSubsetsByFreeSpace(accs, freeSpaceByService);
+
+        console.log(accountsGroupedForStart);
 
         await startAccsByService(
           args.payload.rabbitUrl,
@@ -170,24 +174,29 @@ async function getFreeSpaceByService(maxFreeSpacePerService: number): Promise<Ma
   );
   await sleep(1000);
 
-  const allActiveAccounts = await db.getAllActiveAccounts();
-  const allLaunchedAccounts = allActiveAccounts.map((acc) => ({
-    id: acc.id,
-    serviceName: acc.scheduler_account_info?.service_name ?? null,
-  }));
-  
-  const accsByService = groupBy(allLaunchedAccounts, 'serviceName');
+  const services = (await db.getWorkerServices()).map(({ service_name }) => service_name);
 
-  const resultMap = new Map<string, number>();
-  for (const [serviceName, accounts] of accsByService.entries()) {
-    if (serviceName === null) {
-      continue;
+    const allLaunchedAccounts = (await db.getAllActiveAccounts()).map((acc) => ({
+      id: acc.id,
+      serviceName: acc.scheduler_account_info?.service_name ?? null,
+    }));
+    
+    const accsByService = groupBy(allLaunchedAccounts, 'serviceName');
+
+    const resultMap = new Map<string, number>();
+    for (const serviceName of services) {
+      const isActive = await serviceHasConsumer(serviceName);
+
+      if (!isActive) {
+        continue;
+      }
+
+      const serviceLaunchedAccounts = accsByService.get(serviceName)?.length || 0;
+
+      resultMap.set(serviceName, Math.max(maxFreeSpacePerService - serviceLaunchedAccounts));
     }
 
-    resultMap.set(serviceName, Math.max(maxFreeSpacePerService - accounts.length, 0));
-  }
-
-  return resultMap;
+    return resultMap;
 }
 
 function selectSubsetsByFreeSpace<T extends { id: number, service_name: string }>(
