@@ -248,7 +248,7 @@ async function startAccsByService(
         type: 'START',
       }
 
-      // console.log(command);
+      console.log(command);
   
       await sendToManagerHttp(
         rabbitUrl,
